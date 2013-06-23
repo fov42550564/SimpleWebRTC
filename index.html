@@ -21,9 +21,9 @@
             // create our webrtc connection
             var webrtc = new WebRTC({
                 // the id/element dom element that will hold "our" video
-                localVideoEl: 'localVideo',
+                localVideoEl: {id:'localVideo', width:150, height:150, scale:{x:-1,y:1},skew:{x:45,y:0},rotate:90},
                 // the id/element dom element that will hold remote videos
-                remoteVideosEl: 'remotes',
+                remoteVideosEl: {id: 'remotes', width:150, height:150, scale:{x:-1,y:1},skew:{x:45,y:0},rotate:90},
                 // immediately ask for camera access
                 autoRequestMedia: true,
                 log: true
