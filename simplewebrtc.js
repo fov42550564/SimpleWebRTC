@@ -12,7 +12,19 @@ var RTCPeerConnection = null,
     attachMediaStream = null,
     reattachMediaStream = null,
     browser = null,
-    webRTCSupport = true;
+    webRTCSupport = true,
+	setVideoSize = null,
+	setVideoScale = null,
+	setVideoSkew = null,
+	setVideoRotate = null;
+
+	setVideoSize = function (videoEl, width, height) {
+    	if (videoEl && videoEl.tagName === 'VIDEO') {
+			videoEl.style.width = width || 200;
+			videoEl.style.height = height || 200;
+		}
+	};
+
 
 if (navigator.mozGetUserMedia) {
     logger.log("This appears to be Firefox");
@@ -51,6 +63,42 @@ if (navigator.mozGetUserMedia) {
     MediaStream.prototype.getAudioTracks = function() {
         return [];
     };
+
+	setVideoScale = function (videoEl, scaleRateX, scaleRateY) {
+		var transform="";
+    	if (videoEl && videoEl.tagName === 'VIDEO') {
+			if (scaleRateX) {
+				transform += "scaleX("+scaleRateX+") ";
+			}
+			if (scaleRateY) {
+				transform += "scaleY("+scaleRateY+") ";
+			}
+		}
+		videoEl.style.MozTransform += transform;
+	};
+
+	setVideoSkew = function (videoEl, skewAngleX, skewAngleY) {
+		var transform="";
+    	if (videoEl && videoEl.tagName === 'VIDEO') {
+			if (skewAngleX) {
+				transform += "skewX("+skewAngleX+"deg) ";
+			}
+			if (skewAngleY) {
+				transform += "skewY("+skewAngleY+"deg) ";
+			}
+		}
+		videoEl.style.MozTransform += transform;
+	};
+
+	setVideoRotate = function (videoEl, rotateAngle) {
+		var transform = "";
+    	if (videoEl && videoEl.tagName === 'VIDEO') {
+			if (rotateAngle) {
+				transform += "rotate("+rotateAngle+"deg) ";
+			}
+		}
+		videoEl.style.MozTransform += transform;
+	};
 } else if (navigator.webkitGetUserMedia) {
     browser = "chrome";
 
@@ -91,6 +139,42 @@ if (navigator.mozGetUserMedia) {
             return this.remoteStreams;
         };
     }
+
+	setVideoScale = function (videoEl, scaleRateX, scaleRateY) {
+		var transform="";
+    	if (videoEl && videoEl.tagName === 'VIDEO') {
+			if (scaleRateX) {
+				transform += "scaleX("+scaleRateX+") ";
+			}
+			if (scaleRateY) {
+				transform += "scaleY("+scaleRateY+") ";
+			}
+		}
+		videoEl.style.webkitTransform += transform;
+	};
+
+	setVideoSkew = function (videoEl, skewAngleX, skewAngleY) {
+		var transform="";
+    	if (videoEl && videoEl.tagName === 'VIDEO') {
+			if (skewAngleX) {
+				transform += "skewX("+skewAngleX+"deg) ";
+			}
+			if (skewAngleY) {
+				transform += "skewY("+skewAngleY+"deg) ";
+			}
+		}
+		videoEl.style.webkitTransform += transform;
+	};
+
+	setVideoRotate = function (videoEl, rotateAngle) {
+		var transform = "";
+    	if (videoEl && videoEl.tagName === 'VIDEO') {
+			if (rotateAngle) {
+				transform += "rotate("+rotateAngle+"deg) ";
+			}
+		}
+		videoEl.style.webkitTransform += transform;
+	};
 } else {
     webRTCSupport = false;
     throw new Error("Browser does not appear to be WebRTC-capable");
@@ -205,10 +289,10 @@ function WebRTC(opts) {
     var self = this,
         options = opts || {},
         config = this.config = {
-            url: 'http://signaling.simplewebrtc.com:8888',
+            url: 'signaling.simplewebrtc.com:8888',
             log: false,
-            localVideoEl: '',
-            remoteVideosEl: '',
+            localVideoEl: {},
+            remoteVideosEl: {},
             autoRequestMedia: false,
             // makes the entire PC config overridable
             peerConnectionConfig: {
@@ -308,19 +392,47 @@ WebRTC.prototype.getEl = function (idOrEl) {
 // and either the video tag itself or a container
 // that will be used to put the video tag into.
 WebRTC.prototype.getLocalVideoContainer = function () {
-    var el = this.getEl(this.config.localVideoEl);
+    var el = this.getEl(this.config.localVideoEl.id);
+	var video = null;
     if (el && el.tagName === 'VIDEO') {
-        return el;
+		video = el;
     } else {
-        var video = document.createElement('video');
+        video = document.createElement('video');
         el.appendChild(video);
-        return video;
     }
+	this.setLocalVideoTransform(video);
+	return video;
 };
 
 WebRTC.prototype.getRemoteVideoContainer = function () {
-    return this.getEl(this.config.remoteVideosEl);
+    return this.getEl(this.config.remoteVideosEl.id);
 };
+
+WebRTC.prototype.setLocalVideoTransform = function (videoEl) {
+	setVideoSize(videoEl, this.config.localVideoEl.width, this.config.localVideoEl.height);
+	if (this.config.localVideoEl.scale) {
+		setVideoScale(videoEl, this.config.localVideoEl.scale.x, this.config.localVideoEl.scale.y);
+	}
+	if (this.config.localVideoEl.skew) {
+		setVideoSkew(videoEl, this.config.localVideoEl.skew.x, this.config.localVideoEl.skew.y);
+	}
+	setVideoRotate(videoEl, this.config.localVideoEl.rotate);
+
+	console.log("setLocalVideoTransform:" + videoEl.style.cssText);
+};
+
+WebRTC.prototype.setRemoteVideoSettings = function (videoEl) {
+	setVideoSize(videoEl, this.config.remoteVideosEl.width, this.config.remoteVideosEl.height);
+	if (this.config.remoteVideosEl.scale) {
+		setVideoScale(videoEl, this.config.remoteVideosEl.scale.x, this.config.remoteVideosEl.scale.y);
+	}
+	if (this.config.remoteVideosEl.skew) {
+		setVideoSkew(videoEl, this.config.remoteVideosEl.skew.x, this.config.remoteVideosEl.skew.y);
+	}
+	setVideoRotate(videoEl, this.config.remoteVideosEl.rotate);
+
+	console.log("setRemoteVideoTransform:" + videoEl.style.cssText);
+}
 
 WebRTC.prototype.startVideoCall = function (id) {
     this.pcs[id] = new Conversation({
@@ -481,12 +593,13 @@ Conversation.prototype.answer = function () {
 
 Conversation.prototype.handleRemoteStreamAdded = function (event) {
     var stream = this.stream = event.stream,
-        el = document.createElement('video'),
+        video = document.createElement('video'),
         container = this.parent.getRemoteVideoContainer();
-    el.id = this.id;
-    attachMediaStream(el, stream);
-    if (container) container.appendChild(el);
-    this.emit('videoAdded', el);
+    video.id = this.id;
+	this.parent.setRemoteVideoSettings(video);
+    attachMediaStream(video, stream);
+    if (container) container.appendChild(video);
+    this.emit('videoAdded', video);
 };
 
 Conversation.prototype.handleStreamRemoved = function () {
